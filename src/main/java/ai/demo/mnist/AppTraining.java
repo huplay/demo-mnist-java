@@ -1,4 +1,4 @@
-package ai.backpropagation;
+package ai.demo.mnist;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -23,7 +23,7 @@ public class AppTraining
 			System.out.println("Not enough parameters");
 
 			// TODO: Just for test:
-			new AppTraining().execute(1000, "test", null);
+			new AppTraining().execute(50000, "test2", "parameters-42");
 		}
 	}
 
@@ -42,12 +42,15 @@ public class AppTraining
 
 		while (true)
 		{
+			long start = System.currentTimeMillis();
+
 			// Train an epoch
 			train(neuralNetwork, trainSize, fileNames);
 
 			// Test
 			test(neuralNetwork, 100);
 
+			System.out.println("Training time: " + (start - System.currentTimeMillis()) / 1000 + " s");
 			System.out.println("Do you want to continue the training with the next epoch? (Y/N) ");
 			if (! "Y".equalsIgnoreCase(new Scanner(System.in).next())) break;
 		}
@@ -99,9 +102,9 @@ public class AppTraining
 
 			String[] path = file.getParent().split("\\\\");
 
-			float[] expectedOutput = getOneHotArray(path[path.length - 1]);
+			float[] target = getOneHotArray(path[path.length - 1]);
 
-			neuralNetwork.train(input, expectedOutput);
+			neuralNetwork.train(input, target);
 		}
 	}
 

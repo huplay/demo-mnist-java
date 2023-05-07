@@ -1,4 +1,4 @@
-package ai.backpropagation;
+package ai.demo.mnist;
 
 import java.io.File;
 

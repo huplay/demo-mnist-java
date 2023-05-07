@@ -1,4 +1,4 @@
-package ai.backpropagation;
+package ai.demo.mnist;
 
 import static java.lang.Math.*;
 
@@ -15,7 +15,7 @@ public class NeuronLayer
 	private float[] inputs;
 	private float[] outputs;
 	
-	private float[] deltas;
+	private float[] errors;
 
 	public NeuronLayer(int inputCount, int neuronCount)
 	{
@@ -55,12 +55,12 @@ public class NeuronLayer
 		return outputs;
 	}
 
-	public float[] backPropagate(float[] outputErrors)
+	public float[] backPropagateErrors(float[] outputErrors)
 	{
-		deltas = new float[neuronCount];
+		errors = new float[neuronCount];
 		for (int neuron = 0; neuron < neuronCount; neuron++)
 		{
-			deltas[neuron] = gradient(outputs[neuron]) * outputErrors[neuron];
+			errors[neuron] = gradient(outputs[neuron]) * outputErrors[neuron];
 		}
 
 		float[] inputErrors = new float[inputCount];
@@ -68,23 +68,25 @@ public class NeuronLayer
 		{
 			for (int neuron = 0; neuron < neuronCount; neuron++)
 			{
-				inputErrors[input] += weights[neuron][input] * deltas[neuron];
+				inputErrors[input] += weights[neuron][input] * errors[neuron];
 			}
 		}
 
 		return inputErrors;
 	}
 
-	public void update(double learningRate)
+	public void updateParameters(double learningRate)
 	{
 		for (int neuron = 0; neuron < neuronCount; neuron++)
 		{
+			// Update the weights
 			for (int input = 0; input < inputCount; input++)
 			{
-				weights[neuron][input] -= learningRate * inputs[input] * deltas[neuron];
+				weights[neuron][input] -= learningRate * inputs[input] * errors[neuron];
 			}
 
-			biases[neuron] -= learningRate * deltas[neuron]; // The bias is updated as it would be a weight, with 1 as input
+			// Update the biases - treated as it would be a weight, with 1 as input
+			biases[neuron] -= learningRate * errors[neuron];
 		}
 	}
 

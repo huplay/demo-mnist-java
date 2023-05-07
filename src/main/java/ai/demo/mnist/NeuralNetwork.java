@@ -1,4 +1,4 @@
-package ai.backpropagation;
+package ai.demo.mnist;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,26 +18,29 @@ public class NeuralNetwork
 		this.neuronLayers.add(neuronLayer);
 	}
 
-	public void train(float[] input, float[] expectedOutput)
+	public void train(float[] input, float[] target)
 	{
 		// Feed forward
 		float[] output = feedForward(input, true);
 
-		// Calculate difference
-		float[] difference = getDifference(output, expectedOutput);
-
-		// Back-propagate error
-		for (int i = neuronLayers.size() - 1; i >= 0; i--)
+		// Calculate error on the output layer
+		float[] errors = new float[output.length];
+		for (int i = 0; i < output.length; i++)
 		{
-			NeuronLayer neuronLayer = neuronLayers.get(i);
-
-			difference = neuronLayer.backPropagate(difference);
+			errors[i] = output[i] - target[i];
 		}
 
-		// Update weights and biases
+		// Back-propagate error to the previous layers
+		float[] prevErrors = errors;
+		for (int i = neuronLayers.size() - 1; i >= 0; i--)
+		{
+			prevErrors = neuronLayers.get(i).backPropagateErrors(prevErrors);
+		}
+
+		// Update the parameters using the
 		for (NeuronLayer neuronLayer : neuronLayers)
 		{
-			neuronLayer.update(learningRate);
+			neuronLayer.updateParameters(learningRate);
 		}
 	}
 
@@ -69,18 +72,6 @@ public class NeuralNetwork
 		}
 
 		return hiddenState;
-	}
-
-	public float[] getDifference(float[] output, float[] expectedOutput)
-	{
-		float[] difference = new float[output.length];
-
-		for (int i = 0; i < output.length; i++)
-		{
-			difference[i] = output[i] - expectedOutput[i];
-		}
-
-		return difference;
 	}
 
 	public List<NeuronLayer> getNeuronLayers()
