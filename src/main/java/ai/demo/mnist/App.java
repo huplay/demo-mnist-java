@@ -1,9 +1,10 @@
 package ai.demo.mnist;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * The MNIST demo app
+ */
 public class App
 {
 	public static void main(String[] args) throws Exception
@@ -13,11 +14,11 @@ public class App
 			// Reading command line parameters
 			String model = args[0];
 			String parameters = null;
-			boolean isTestOnly = false;
+			boolean isTrain = true;
 
-			if (args[0].equalsIgnoreCase("--test"))
+			if (args[0].equalsIgnoreCase("--testOnly"))
 			{
-				isTestOnly = true;
+				isTrain = false;
 				model = args[1];
 
 				if (args.length > 2) parameters = args[2];
@@ -26,7 +27,7 @@ public class App
 			else if (args.length > 1) parameters = args[1];
 
 			// Execute the test and train
-			new App().execute(model, parameters, isTestOnly);
+			new App().execute(model, parameters, isTrain);
 		}
 		else
 		{
@@ -34,23 +35,32 @@ public class App
 		}
 	}
 
-	private void execute(String model, String parameters, boolean isTestOnly) throws Exception
+	/**
+	 * Creates a neural network (new or loaded from parameter files), performs an initial test,
+	 * and optionally trains the network in multiple epochs
+	 */
+	private void execute(String model, String parameters, boolean isTrain) throws Exception
 	{
+		System.out.println("MNIST demo app.");
+		System.out.println("Model: " + model + (parameters == null ? "" : "(" + parameters + ")"));
+
 		// Read settings
 		String modelPath = "models/" + model;
 		Settings settings = new Settings(modelPath);
 
 		// Build neural network
-		NeuralNetwork neuralNetwork = buildNeuralNetwork(settings, modelPath, parameters);
+		NeuralNetwork neuralNetwork = NeuralNetwork.createNeuralNetwork(settings, modelPath, parameters);
 
 		// Read test examples
 		List<Example> testExamples = FileUtil.readTestExamples();
 
-		// Initial test
+		// Test (measure the percentage of recognition on the test dataset)
 		test(neuralNetwork, testExamples);
 
-		if (!isTestOnly)
+		if (isTrain)
 		{
+			// Training the network
+
 			List<Example> trainExamples = FileUtil.readTrainExamples();
 
 			while (true)
@@ -58,7 +68,7 @@ public class App
 				// Train an epoch
 				trainEpoch(neuralNetwork, trainExamples);
 
-				// Test
+				// Test (measure the percentage of recognition on the test dataset)
 				test(neuralNetwork, testExamples);
 
 				System.out.println("Do you want to continue the training with the next epoch? (Y/N) ");
@@ -66,57 +76,20 @@ public class App
 			}
 
 			// Save the parameters
-			saveParameters(neuralNetwork, modelPath);
+			FileUtil.saveParameters(neuralNetwork, modelPath);
 		}
-	}
-
-	private NeuralNetwork buildNeuralNetwork(Settings settings, String modelPath, String parametersFolder)
-	{
-		NeuralNetwork neuralNetwork = new NeuralNetwork(settings.getLearningRate());
-
-		int inputCount = 28 * 28;
-
-		for (int i = 0; i < settings.getLayerCount(); i++)
-		{
-			int neuronCount = settings.getLayerSizes().get(i);
-
-			NeuronLayer neuronLayer = new NeuronLayer(inputCount, neuronCount);
-
-			if (parametersFolder == null)
-			{
-				Random rnd = new Random();
-				neuronLayer.setWeights(generateRandomWeights(inputCount, neuronCount, rnd));
-				neuronLayer.setBiases(generateRandomBiases(neuronCount, rnd));
-			}
-			else
-			{
-				// Read parameters
-				String prefix = modelPath + "/" + parametersFolder + "/layer." + i + ".";
-				neuronLayer.setWeights(FileUtil.readWeightFile(prefix + "w.dat", neuronCount, inputCount));
-				neuronLayer.setBiases(FileUtil.readBiasFile(prefix + "b.dat", neuronCount));
-			}
-
-			neuralNetwork.addNeuronLayer(neuronLayer);
-
-			inputCount = neuronCount;
-		}
-
-		if (parametersFolder == null) System.out.println("Parameters are initialized randomly.");
-		else System.out.println("Parameters are initialized from folder: " + parametersFolder);
-
-		return neuralNetwork;
 	}
 
 	private void trainEpoch(NeuralNetwork neuralNetwork, List<Example> examples)
 	{
-		System.out.print("Training... ");
+		System.out.print("\nTraining... ");
 
 		for (Example example : examples)
 		{
 			float[] target = new float[10];
 			target[example.getLabel()] = 1;
 
-			neuralNetwork.train(example.getData(), target);
+			neuralNetwork.train(example.getPixels(), target);
 		}
 
 		System.out.println("Done");
@@ -131,7 +104,8 @@ public class App
 		// Test
 		for (Example example : examples)
 		{
-			int result = neuralNetwork.test(example.getData());
+			float[] output = neuralNetwork.feedForward(example.getPixels());
+			int result = determineResult(output);
 
 			if (result == example.getLabel()) success++;
 		}
@@ -141,55 +115,18 @@ public class App
 		System.out.println(" Success: " + successPercentage + "%");
 	}
 
-	private void saveParameters(NeuralNetwork neuralNetwork, String modelPath) throws Exception
+	private int determineResult(float[] output)
 	{
-		System.out.print("Saving parameters... ");
+		int maxIndex = 0;
 
-		String time = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(Calendar.getInstance().getTime());
-		String folder = modelPath + "/parameters-" + time;
-
-		if (new File(folder).mkdirs())
+		for (int i = 1; i < output.length; i++)
 		{
-			for (int layer = 0; layer < neuralNetwork.getNeuronLayers().size(); layer++)
+			if (output[i] > output[maxIndex])
 			{
-				NeuronLayer neuralLayer = neuralNetwork.getNeuronLayers().get(layer);
-
-				FileUtil.createWeightFile(folder + "/layer." + layer + ".w.dat", neuralLayer.getWeights());
-				FileUtil.createBiasFile(folder + "/layer." + layer + ".b.dat", neuralLayer.getBiases());
-			}
-		}
-		else
-		{
-			System.out.println("Parameter folder creation error");
-		}
-
-		System.out.println("Done (" + folder + ")");
-	}
-
-	private float[][] generateRandomWeights(int inputCount, int neuronCount, Random rnd)
-	{
-		float[][] randomWeights = new float[neuronCount][inputCount];
-
-		for (int n = 0; n < neuronCount; n++)
-		{
-			for (int x = 0; x < inputCount; x++)
-			{
-				randomWeights[n][x] = 2 * rnd.nextFloat() - 1;
+				maxIndex = i;
 			}
 		}
 
-		return randomWeights;
-	}
-
-	private float[] generateRandomBiases(int neuronCount, Random rnd)
-	{
-		float[] randomBiases = new float[neuronCount];
-
-		for (int n = 0; n < neuronCount; n++)
-		{
-			randomBiases[n] = 2 * rnd.nextFloat() - 1;
-		}
-
-		return randomBiases;
+		return maxIndex;
 	}
 }

@@ -1,12 +1,18 @@
 package ai.demo.mnist;
 
+import ai.demo.mnist.activation.Activation;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * To read and store all information of the model.properties file
+ */
 public class Settings
 {
     private final List<Integer> layerSizes;
+    private final String activation;
     private final float learningRate;
 
     public Settings(String modelPath) throws Exception
@@ -22,7 +28,14 @@ public class Settings
         }
         layerSizes.add(10);
 
+        activation = properties.get("activation");
+
         learningRate = toFloat(properties.get("learning.rate"));
+
+        System.out.print("Layers: (784)");
+        for (int size : layerSizes) System.out.print(" - " + size);
+        System.out.println("\nActivation function: " + activation);
+        System.out.println("Learning rate: " + learningRate + "\n");
     }
 
     public static Map<String, String> readProperties(String fileName) throws Exception
@@ -88,6 +101,11 @@ public class Settings
     public List<Integer> getLayerSizes()
     {
         return layerSizes;
+    }
+
+    public Activation getActivation()
+    {
+        return Activation.getInstance(activation);
     }
 
     public float getLearningRate()
