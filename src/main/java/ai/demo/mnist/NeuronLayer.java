@@ -102,7 +102,7 @@ public class NeuronLayer
 
 	public float sigmoid(float x)
 	{
-		return (float) (1 / (1 + Math.exp(-x)));
+		return (float) (1.0 / (1.0 + Math.exp(-x)));
 	}
 
 	public float sigmoidGradient(float x)

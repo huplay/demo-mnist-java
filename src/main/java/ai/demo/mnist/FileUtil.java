@@ -1,34 +1,50 @@
 package ai.demo.mnist;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferByte;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 public class FileUtil
 {
-    public static float[] readPngFile(File file) throws Exception
+    public static List<Example> readTrainExamples() throws Exception
     {
-        BufferedImage image = ImageIO.read(file);
-        DataBuffer dataBuffer = image.getRaster().getDataBuffer();
-        DataBufferByte dataBufferByte = (DataBufferByte) dataBuffer;
+        List<Example> examples = readExamples(new File("src/main/resources/mnist_train_0.csv"));
+        examples.addAll(readExamples(new File("src/main/resources/mnist_train_1.csv")));
+        examples.addAll(readExamples(new File("src/main/resources/mnist_train_2.csv")));
 
-        byte[] bytes = dataBufferByte.getData();
+        return examples;
+    }
 
-        float scale = 0.99f / 255;
+    public static List<Example> readTestExamples() throws Exception
+    {
+        return readExamples(new File("src/main/resources/mnist_test.csv"));
+    }
 
-        float[] floats = new float[bytes.length];
+    public static List<Example> readExamples(File file) throws Exception
+    {
+        List<Example> examples = new ArrayList<>();
 
-        for (int i = 0; i < bytes.length; i++)
+        try {
+            Scanner sc = new Scanner(file);
+
+            while (sc.hasNextLine())
+            {
+                examples.add(new Example(sc.nextLine()));
+            }
+
+            sc.close();
+
+        }
+        catch (IOException e)
         {
-            floats[i] = (float) (bytes[i] * scale + 0.01);
+            throw new Error("File reading error: " + file.getName());
         }
 
-        return floats;
+        return examples;
     }
 
     public static void createWeightFile(String fileName, float[][] weights) throws Exception
@@ -80,7 +96,6 @@ public class FileUtil
         {
             FileChannel channel = stream.getChannel();
             ByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, (long) size * 4);
-            //buffer.order(settings.getByteOrder());
             FloatBuffer floatBuffer = buffer.asFloatBuffer();
 
             floatBuffer.get(array, 0, size);

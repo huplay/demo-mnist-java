@@ -19,7 +19,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>ai.demo.mnist.AppTraining</mainClass>
+                            <mainClass>ai.demo.mnist.App</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

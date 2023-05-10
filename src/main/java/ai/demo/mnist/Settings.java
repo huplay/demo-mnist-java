@@ -6,14 +6,7 @@ import java.util.*;
 
 public class Settings
 {
-    private final String  inputSource;
-    private final int inputX;
-    private final int inputY;
-    private final int categoryCount;
-    private final List<String> categories;
-    private final Map<String, Integer> categoryMap;
-    private final int hiddenLayers;
-    private final List<Integer> hiddenLayerSizes;
+    private final List<Integer> layerSizes;
     private final float learningRate;
 
     public Settings(String modelPath) throws Exception
@@ -21,26 +14,13 @@ public class Settings
         // Read all properties from the model.properties file
         Map<String, String> properties = readProperties(modelPath + "/model.properties");
 
-        inputSource = properties.get("input.source");
-        inputX = toInt(properties.get("input.x"));
-        inputY = toInt(properties.get("input.y"));
-
-        categoryCount = toInt(properties.get("category.count"));
-        categories = new ArrayList<>(categoryCount);
-        categoryMap = new HashMap<>(categoryCount);
-        for (int i = 0; i < categoryCount; i++)
-        {
-            String category = properties.get("category." + i);
-            categories.add(category);
-            categoryMap.put(category, i);
-        }
-
-        hiddenLayers = toInt(properties.get("hidden.layers"));
-        hiddenLayerSizes = new ArrayList<>(hiddenLayers);
+        int hiddenLayers = toInt(properties.get("hidden.layers"));
+        layerSizes = new ArrayList<>(hiddenLayers + 1);
         for (int i = 0; i < hiddenLayers; i++)
         {
-            hiddenLayerSizes.add(toInt(properties.get("hidden." + i + ".size")));
+            layerSizes.add(toInt(properties.get("hidden." + i + ".size")));
         }
+        layerSizes.add(10);
 
         learningRate = toFloat(properties.get("learning.rate"));
     }
@@ -100,44 +80,14 @@ public class Settings
         }
     }
 
-    public String getInputSource()
+    public int getLayerCount()
     {
-        return inputSource;
+        return layerSizes.size();
     }
 
-    public int getInputX()
+    public List<Integer> getLayerSizes()
     {
-        return inputX;
-    }
-
-    public int getInputY()
-    {
-        return inputY;
-    }
-
-    public int getCategoryCount()
-    {
-        return categoryCount;
-    }
-
-    public List<String> getCategories()
-    {
-        return categories;
-    }
-
-    public Map<String, Integer> getCategoryMap()
-    {
-        return categoryMap;
-    }
-
-    public int getHiddenLayers()
-    {
-        return hiddenLayers;
-    }
-
-    public List<Integer> getHiddenLayerSizes()
-    {
-        return hiddenLayerSizes;
+        return layerSizes;
     }
 
     public float getLearningRate()
